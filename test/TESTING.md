@@ -1,0 +1,23 @@
+# Additional contributor tests
+
+Run from the repository root with `forge build` and `forge test`. These additions use the already-vendored dependencies, require no RPC or installation, and do not change production source or configuration. Fuzz and invariant run counts are set in the Solidity files. No test sets process environment variables, skips checks, or uses FFI.
+
+Validation with Foundry 1.8.3 / Solidity 0.8.26: `forge build` passed; the complete `forge test` run reported **83 passed, 0 failed, 0 skipped** across 11 suites. All three invariant campaigns completed with zero unexpected handler reverts (49,152 random calls including the accepted suite). Forge reports multiple invariant functions in one contract as a grouped test, so this count follows its summary.
+
+| File | Additional guarantees checked |
+| --- | --- |
+| `LaunchTokenProperties.t.sol` | Four-actor transfers, approvals, delegated transfers, revocation and rejected overspending; every balance and allowance is checked against independent input-based bookkeeping. The closed set of holders must always sum to the fixed supply. Unit cases cover zero, one, the whole supply, maximum approval, self-transfers and rollback of allowances. |
+| `GameLedgerInvariant.t.sol` | Random sequences of funding by several sponsors, gameplay, time, cosmetics, donations, partial refunds, accrual, claims and recycling. Cashflows independently back liabilities, retirement and donations. Every reachable epoch's unallocated budget plus all player credits must equal total liabilities. Empty epochs preserve each sponsor's refundable deposits; total power equals credited plus outstanding player power. |
+| `GameSettlementProperties.t.sol` | Split refunds commute with recycling and sponsor ordering. Three-player pro-rata payouts stay correct across settlement permutations. Covers one-unit budgets whose shares round to zero, maximum `uint128` prize deposits, aggregate budgets larger than `uint128`, automatic accrual over multiple epochs, claims during later active epochs, delayed claims and independent asset recovery. |
+| `GameActionProperties.t.sol` | Wrong lengths, noncanonical high bits in every ABI word, native-value rejection and every expired order preserve state on failure. Checks premature lethal-attack rollback, reward eligibility fixed at match start, and player/session/turn/power event data. |
+| `GameExactTransfer.t.sol` | Offline ERC-20 behavior probes return success without movement or debit an extra sender unit. Funding, claims and refunds must reject these and preserve entitlements and other sponsors' reserves. A six-decimal probe checks raw-unit accounting. |
+
+The two new invariant campaigns use 256 runs each, with depths 96 (token) and 64 (game): 40,960 random handler calls. Seven new fuzz properties use 1,000 cases each. Handler exercise tests explicitly reach nonzero transfers, rejected operations, partial refunds, recycling and claims; the game campaign starts with actual earned credits and a separate refundable epoch. Expected external-call failures are asserted, and unexpected handler reverts fail the campaigns.
+
+The game invariant reuses the accepted legal-battle driver. It explores random sequences of complete legal strategies and accounting operations; it does not claim exhaustive exploration of every possible individual battle move. Its epoch traversal covers the driver's complete funding range (through three days ahead). The token campaign restricts recipients and spenders to four tracked actors so its supply and approval model is complete for those sequences.
+
+## Configuration finding and integration limits
+
+The supplied workflow names prize asset `0xD34a99Bc0f67aE1bbd63C660e6d0b0dd03E263B7`, while `Game` embeds `0x5F7Bb59365ce557C26dbcAa4EE9d39A4b95B7127`. The existing README cites an earlier chain-table override, but that table is not among this assignment's inputs. This unresolved configuration conflict is recorded separately in `.imd-findings.json`, with an isolated Foundry assertion that was run and failed on the exact address mismatch. The proof is stored in that report, outside the passing default suite. Confirm the authoritative chain override during independent launch review; changing the address without that context is not justified by these tests.
+
+All external-asset behavior is simulated locally at the address configured by the contract. This does not authenticate that address or establish actual IMD code, decimals, administrative powers or transfer behavior. Live-chain validation against the authoritative deployment and the source/manifest review remain outstanding. No fork run or deployment was performed.
