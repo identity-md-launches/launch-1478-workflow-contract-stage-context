@@ -1,0 +1,25 @@
+{
+  "kind": "evm_project",
+  "token": {
+    "contract": "LaunchToken",
+    "name": "RH PEPEFRONT",
+    "symbol": "PEPEFRONT",
+    "decimals": 18
+  },
+  "contracts": [
+    {
+      "contract": "Game",
+      "constructorArgs": [
+        "$owner",
+        "$token"
+      ]
+    }
+  ],
+  "pool": {
+    "pairedCurrency": "0x5f7bb59365ce557c26dbcaa4ee9d39a4b95b7127",
+    "fee": 12500,
+    "tickSpacing": 60,
+    "initialPrice": "79228162514264337593543950336"
+  },
+  "notes": "Unofficial RH PEPEFRONT community strategy game. Game implements deterministic single-player battles, command-power accounting, deposit-backed launch-token and IMD rewards, and cosmetics. Its constructor receives the launch owner followed by LaunchToken. Battlefield and CommandPower are internal libraries compiled into Game. No initialization calls are required. The factory supplies the LP, MerkleDistributor and initialization-only pool guard."
+}
